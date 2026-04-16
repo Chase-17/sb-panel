@@ -5,8 +5,15 @@ from app.config import get_settings
 
 settings = get_settings()
 
+# Convert postgres:// to postgresql+asyncpg:// for SQLAlchemy async
+database_url = settings.database_url
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 engine = create_async_engine(
-    settings.database_url,
+    database_url,
     echo=settings.debug,
 )
 

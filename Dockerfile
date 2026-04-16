@@ -22,11 +22,6 @@ COPY backend/app ./app
 # Copy built frontend
 COPY --from=frontend-builder /frontend/dist ./static
 
-# Create data directory for SQLite
-RUN mkdir -p /data
-
-ENV DATABASE_URL=sqlite+aiosqlite:////data/sb_panel.db
-
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

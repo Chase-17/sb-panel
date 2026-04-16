@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     app_name: str = "Still Breathing"
     debug: bool = False
     
-    # Database
+    # Database (SQLite for local, Postgres for production)
     database_url: str = "sqlite+aiosqlite:///./sb_panel.db"
     
     # JWT
