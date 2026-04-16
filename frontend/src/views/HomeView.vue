@@ -48,29 +48,36 @@ function formatDate(iso) {
 <template>
   <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-8">
-      <h1 class="text-2xl font-bold text-bone">Мои персонажи</h1>
+      <h1 class="text-2xl font-bold text-bone flex items-center gap-2">
+        <span class="i-game-icons-person icon-lg text-bone/60"></span>
+        Мои персонажи
+      </h1>
       <div class="flex gap-2">
-        <button @click="showImportDialog = true" class="btn-secondary">
-          📥 Импорт
+        <button @click="showImportDialog = true" class="btn-secondary flex items-center gap-1.5">
+          <span class="i-tabler-download icon-sm"></span>
+          Импорт
         </button>
-        <button @click="showNewDialog = true" class="btn-primary">
-          + Создать
+        <button @click="showNewDialog = true" class="btn-primary flex items-center gap-1.5">
+          <span class="i-tabler-plus icon-sm"></span>
+          Создать
         </button>
       </div>
     </div>
     
     <!-- Loading -->
-    <div v-if="store.loading" class="text-center py-12 text-bone/60">
+    <div v-if="store.loading" class="text-center py-12 text-bone/60 flex items-center justify-center gap-2">
+      <span class="i-tabler-loader-2 icon animate-spin"></span>
       Загрузка...
     </div>
     
     <!-- Empty state -->
     <div v-else-if="store.characters.length === 0" class="text-center py-16">
-      <div class="text-6xl mb-4">💀</div>
+      <div class="i-game-icons-skull w-20 h-20 mx-auto mb-4 text-bone/20"></div>
       <p class="text-bone/60 text-lg">Пока нет персонажей</p>
       <p class="text-bone/40 mt-2">Создай первого выжившего!</p>
-      <button @click="showNewDialog = true" class="btn-primary mt-6">
-        + Создать персонажа
+      <button @click="showNewDialog = true" class="btn-primary mt-6 inline-flex items-center gap-2">
+        <span class="i-tabler-plus icon-sm"></span>
+        Создать персонажа
       </button>
     </div>
     
@@ -83,19 +90,23 @@ function formatDate(iso) {
         class="card hover:border-blood/50 transition group"
       >
         <div class="flex items-start justify-between">
-          <div>
-            <h3 class="text-lg font-semibold text-bone group-hover:text-blood transition">
-              {{ char.name }}
-            </h3>
-            <p class="text-bone/60 text-sm mt-1">
-              {{ char.concept || 'Без концепта' }}
-            </p>
+          <div class="flex items-start gap-3">
+            <span class="i-game-icons-person icon-lg text-bone/40 group-hover:text-blood transition mt-0.5"></span>
+            <div>
+              <h3 class="text-lg font-semibold text-bone group-hover:text-blood transition">
+                {{ char.name }}
+              </h3>
+              <p class="text-bone/60 text-sm mt-1">
+                {{ char.concept || 'Без концепта' }}
+              </p>
+            </div>
           </div>
           <span class="text-xs px-2 py-1 rounded bg-decay/30 text-bone/80">
             {{ char.character_type }}
           </span>
         </div>
-        <p class="text-bone/40 text-xs mt-4">
+        <p class="text-bone/40 text-xs mt-4 flex items-center gap-1">
+          <span class="i-tabler-clock icon-sm"></span>
           Обновлён {{ formatDate(char.updated_at) }}
         </p>
       </router-link>
@@ -103,9 +114,12 @@ function formatDate(iso) {
     
     <!-- New character dialog -->
     <Teleport to="body">
-      <div v-if="showNewDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50" @click.self="showNewDialog = false">
-        <div class="card w-full max-w-md mx-4">
-          <h2 class="text-xl font-bold text-bone mb-4">Новый персонаж</h2>
+      <div v-if="showNewDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="showNewDialog = false">
+        <div class="card w-full max-w-md">
+          <h2 class="text-xl font-bold text-bone mb-4 flex items-center gap-2">
+            <span class="i-tabler-plus icon text-blood"></span>
+            Новый персонаж
+          </h2>
           <input
             v-model="newCharName"
             type="text"
@@ -126,9 +140,12 @@ function formatDate(iso) {
     
     <!-- Import dialog -->
     <Teleport to="body">
-      <div v-if="showImportDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50" @click.self="showImportDialog = false">
-        <div class="card w-full max-w-md mx-4">
-          <h2 class="text-xl font-bold text-bone mb-4">Импорт персонажа</h2>
+      <div v-if="showImportDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="showImportDialog = false">
+        <div class="card w-full max-w-md">
+          <h2 class="text-xl font-bold text-bone mb-4 flex items-center gap-2">
+            <span class="i-tabler-download icon text-blood"></span>
+            Импорт персонажа
+          </h2>
           <textarea
             v-model="importCode"
             placeholder="Вставь код персонажа..."
