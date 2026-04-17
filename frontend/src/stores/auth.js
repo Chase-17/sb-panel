@@ -174,6 +174,15 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
   
+  async function deleteAccount() {
+    const res = await api('/auth/account', { method: 'DELETE' })
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.detail || 'Delete failed')
+    }
+    clearAuth()
+  }
+
   // API helper with auth header
   async function api(endpoint, options = {}) {
     const headers = {
@@ -207,6 +216,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     beginAuth,
     completeAuth,
+    deleteAccount,
     simpleLogin,
     logout,
     api,

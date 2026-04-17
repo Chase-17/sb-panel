@@ -10,7 +10,7 @@ from webauthn import options_to_json
 
 from app.database import get_db
 from app.models import User, WebAuthnCredential
-from app.auth.jwt import create_access_token
+from app.auth.jwt import create_access_token, get_current_user
 from app.auth.webauthn import (
     get_registration_options,
     verify_registration,
@@ -336,3 +336,16 @@ async def simple_login(
     
     token = create_access_token(user.id, user.nickname)
     return TokenResponse(access_token=token, nickname=user.nickname)
+
+
+# === Account deletion ===
+
+@router.delete("/account")
+async def delete_account(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete user account, credentials, and all characters."""
+    await db.delete(user)
+    await db.commit()
+    return {"detail": "Account deleted"}
