@@ -47,6 +47,51 @@ class UserCheckResponse(BaseModel):
     nickname: str
 
 
+# === Unified begin flow (single request before WebAuthn prompt) ===
+
+@router.post("/begin")
+async def begin(
+    request: NicknameRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Single endpoint: determines register vs login and returns WebAuthn options.
+    Minimizes network calls before browser WebAuthn prompt to avoid user gesture timeout.
+    """
+    nickname = request.nickname.lower().strip()
+    
+    if len(nickname) < 2 or len(nickname) > 20:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nickname must be 2-20 characters"
+        )
+    
+    result = await db.execute(
+        select(User).options(selectinload(User.credentials)).where(User.nickname == nickname)
+    )
+    existing = result.scalar_one_or_none()
+    
+    if existing and existing.credentials:
+        # LOGIN flow
+        credential_ids = [c.credential_id for c in existing.credentials]
+        options = get_authentication_options(credential_ids)
+        _challenges[nickname] = options.challenge
+        return {"mode": "login", "options": options_to_json(options)}
+    
+    # REGISTER flow (clean orphan if needed)
+    if existing:
+        await db.delete(existing)
+        await db.commit()
+    
+    user = User(nickname=nickname)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    
+    options = get_registration_options(user.id, nickname)
+    _challenges[nickname] = options.challenge
+    return {"mode": "register", "options": options_to_json(options)}
+
+
 # === Registration Flow ===
 
 @router.post("/check-nickname")
@@ -62,14 +107,6 @@ async def check_nickname(
     # Orphan users (no credentials) are treated as non-existent
     exists = user is not None and len(user.credentials) > 0
     return UserCheckResponse(exists=exists, nickname=request.nickname)
-
-
-# TEMPORARY: debug endpoint to check WebAuthn config
-@router.get("/debug-config")
-async def debug_config():
-    from app.config import get_settings
-    s = get_settings()
-    return {"rp_id": s.rp_id, "rp_origin": s.rp_origin, "rp_name": s.rp_name}
 
 
 @router.post("/register/begin")

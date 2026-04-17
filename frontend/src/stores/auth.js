@@ -24,6 +24,55 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('sb_nickname')
   }
   
+  // === Unified auth flow (single request before WebAuthn prompt) ===
+  
+  async function beginAuth(nick) {
+    const res = await fetch(`${API_URL}/auth/begin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname: nick })
+    })
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.detail || 'Auth failed')
+    }
+    return res.json()
+  }
+  
+  async function completeAuth(nick, { mode, options }) {
+    const parsedOptions = JSON.parse(options)
+    
+    if (mode === 'register') {
+      const credential = await startRegistration(parsedOptions)
+      const completeRes = await fetch(`${API_URL}/auth/register/complete?nickname=${nick}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential })
+      })
+      if (!completeRes.ok) {
+        const error = await completeRes.json()
+        throw new Error(error.detail || 'Registration failed')
+      }
+      const data = await completeRes.json()
+      setAuth(data.access_token, data.nickname)
+      return data
+    } else {
+      const credential = await startAuthentication(parsedOptions)
+      const completeRes = await fetch(`${API_URL}/auth/login/complete?nickname=${nick}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential })
+      })
+      if (!completeRes.ok) {
+        const error = await completeRes.json()
+        throw new Error(error.detail || 'Login failed')
+      }
+      const data = await completeRes.json()
+      setAuth(data.access_token, data.nickname)
+      return data
+    }
+  }
+
   async function checkNickname(nick) {
     const res = await fetch(`${API_URL}/auth/check-nickname`, {
       method: 'POST',
@@ -156,6 +205,8 @@ export const useAuthStore = defineStore('auth', () => {
     checkNickname,
     register,
     login,
+    beginAuth,
+    completeAuth,
     simpleLogin,
     logout,
     api,

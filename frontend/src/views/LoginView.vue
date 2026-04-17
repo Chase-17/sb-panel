@@ -25,15 +25,10 @@ async function handleSubmit() {
   loading.value = true
   
   try {
-    const { exists } = await auth.checkNickname(nickname.value)
-    
-    if (exists) {
-      step.value = 'authenticating'
-      await auth.login(nickname.value)
-    } else {
-      step.value = 'registering'
-      await auth.register(nickname.value)
-    }
+    // Single request — determines register vs login and returns WebAuthn options
+    const result = await auth.beginAuth(nickname.value)
+    step.value = result.mode === 'login' ? 'authenticating' : 'registering'
+    await auth.completeAuth(nickname.value, result)
     
     router.push('/')
   } catch (e) {
