@@ -7,6 +7,7 @@ export const useCharactersStore = defineStore('characters', () => {
   const characters = ref([])
   const currentCharacter = ref(null)
   const loading = ref(false)
+  const saving = ref(false)
   const error = ref(null)
   
   async function fetchCharacters() {
@@ -25,8 +26,8 @@ export const useCharactersStore = defineStore('characters', () => {
     }
   }
   
-  async function fetchCharacter(id) {
-    loading.value = true
+  async function fetchCharacter(id, { silent = false } = {}) {
+    if (!silent) loading.value = true
     error.value = null
     
     try {
@@ -38,7 +39,7 @@ export const useCharactersStore = defineStore('characters', () => {
     } catch (e) {
       error.value = e.message
     } finally {
-      loading.value = false
+      if (!silent) loading.value = false
     }
   }
   
@@ -71,7 +72,7 @@ export const useCharactersStore = defineStore('characters', () => {
   }
   
   async function updateCharacter(id, data) {
-    loading.value = true
+    saving.value = true
     error.value = null
     
     try {
@@ -101,7 +102,7 @@ export const useCharactersStore = defineStore('characters', () => {
     } catch (e) {
       error.value = e.message
     } finally {
-      loading.value = false
+      saving.value = false
     }
   }
   
@@ -144,6 +145,7 @@ export const useCharactersStore = defineStore('characters', () => {
     characters,
     currentCharacter,
     loading,
+    saving,
     error,
     fetchCharacters,
     fetchCharacter,

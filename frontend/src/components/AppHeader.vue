@@ -12,21 +12,21 @@ function logout() {
 </script>
 
 <template>
-  <header class="bg-ash/50 border-b border-bone/10 px-4 py-3">
-    <div class="container mx-auto flex items-center justify-between">
-      <router-link to="/" class="flex items-center gap-2 text-xl font-bold text-bone hover:text-blood transition">
-        <span class="i-game-icons-zombie-hand icon-lg text-blood"></span>
-        <span>Still Breathing</span>
+  <header class="bg-night border-b-2 border-toxic-muted px-2 py-2">
+    <div class="flex items-center justify-between gap-2">
+      <router-link to="/" class="flex items-center gap-1.5 text-lg font-bold text-bone hover:text-toxic transition min-w-0">
+        <!-- <span class="i-game-icons-zombie-hand icon text-toxic flex-none"></span> -->
+        <span class="font-display tracking-wider truncate">STILL BREATHING</span>
       </router-link>
       
-      <div class="flex items-center gap-4">
-        <span class="text-bone/60 flex items-center gap-1.5">
-          <span class="i-ph-user-circle icon text-bone/40"></span>
-          {{ auth.nickname }}
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-bone-dim flex items-center gap-1">
+          <span class="i-ph-user-circle icon-sm text-bone-muted"></span>
+          <span class="truncate max-w-20">{{ auth.nickname }}</span>
         </span>
-        <button @click="logout" class="btn-secondary text-sm flex items-center gap-1.5">
+        <button @click="logout" class="text-bone-muted hover:text-toxic flex items-center gap-1 transition-colors">
           <span class="i-tabler-logout icon-sm"></span>
-          Выйти
+          <span class="hidden sm:inline">Выйти</span>
         </button>
       </div>
     </div>

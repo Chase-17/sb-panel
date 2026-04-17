@@ -25,19 +25,43 @@ class CharacterAttributes(BaseModel):
 class Skill(BaseModel):
     name: str
     level: int
-    attribute: str  # which attribute it's linked to
+    attribute: str = ""  # which attribute it's linked to (optional)
+    icon: str = ""
+    description: str = ""
+    color: str = ""
+    category: str = ""
 
 
 class QualityDrawback(BaseModel):
     name: str
     points: int
     description: str = ""
+    icon: str = ""
+    color: str = ""
+    category: str = ""
 
 
 class InventoryItem(BaseModel):
     name: str
     quantity: int = 1
     notes: str = ""
+    icon: str = ""
+    description: str = ""
+    color: str = ""
+    category: str = ""
+    # New inventory fields
+    itemType: str = "simple"  # simple, quantity, weapon, weapon_ammo, weapon_mag, armor
+    broken: bool = False
+    unit: str = "шт"
+    damage: str = ""
+    range: str = ""
+    ammo: int = 0
+    ammo_type: str = ""
+    mag: int = 0
+    mag_max: int = 0
+    ammo_reserve: int = 0
+    armor_value: int = 0
+    armor_location: str = ""
 
 
 class CharacterData(BaseModel):
@@ -49,15 +73,19 @@ class CharacterData(BaseModel):
     # Core stats
     attributes: CharacterAttributes = CharacterAttributes()
     life_points: int = 0
+    life_points_max: int = 0
     endurance_points: int = 0
+    endurance_points_max: int = 0
     speed: int = 0
     essence: int = 0
+    essence_max: int = 0
     
     # Lists
     skills: list[Skill] = []
     qualities: list[QualityDrawback] = []
     drawbacks: list[QualityDrawback] = []
     inventory: list[InventoryItem] = []
+    storage: list[InventoryItem] = []
     
     # Flavor
     avatar: Optional[str] = None  # base64 or URL

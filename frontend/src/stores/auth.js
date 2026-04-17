@@ -107,6 +107,24 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuth()
   }
   
+  // Simple login without WebAuthn - for dev/mobile fallback
+  async function simpleLogin(nick) {
+    const res = await fetch(`${API_URL}/auth/simple-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname: nick })
+    })
+    
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.detail || 'Login failed')
+    }
+    
+    const data = await res.json()
+    setAuth(data.access_token, data.nickname)
+    return data
+  }
+  
   // API helper with auth header
   async function api(endpoint, options = {}) {
     const headers = {
@@ -138,6 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     checkNickname,
     register,
     login,
+    simpleLogin,
     logout,
     api,
   }

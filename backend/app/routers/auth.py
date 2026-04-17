@@ -244,3 +244,41 @@ async def login_complete(
     
     token = create_access_token(user.id, user.nickname)
     return TokenResponse(access_token=token, nickname=user.nickname)
+
+
+# === Simple login for dev/mobile without WebAuthn ===
+
+@router.post("/simple-login")
+async def simple_login(
+    request: NicknameRequest,
+    db: AsyncSession = Depends(get_db)
+) -> TokenResponse:
+    """Simple login without WebAuthn - for development only.
+    Creates user if doesn't exist, logs in if exists.
+    """
+    import os
+    if os.getenv("ENVIRONMENT", "development") == "production":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Simple login disabled in production"
+        )
+    nickname = request.nickname.lower().strip()
+    
+    if len(nickname) < 2 or len(nickname) > 20:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nickname must be 2-20 characters"
+        )
+    
+    # Find or create user
+    result = await db.execute(select(User).where(User.nickname == nickname))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        user = User(nickname=nickname)
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+    
+    token = create_access_token(user.id, user.nickname)
+    return TokenResponse(access_token=token, nickname=user.nickname)

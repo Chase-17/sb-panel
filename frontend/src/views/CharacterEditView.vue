@@ -9,8 +9,7 @@ const store = useCharactersStore()
 
 // Form state
 const name = ref('')
-const concept = ref('')
-const characterType = ref('Survivor')
+const characterType = ref('')
 const attributes = ref({
   strength: 2,
   dexterity: 2,
@@ -45,7 +44,7 @@ const derivedStats = computed(() => {
 })
 
 // Attribute points tracking
-const totalAttributePoints = 20 // Default for Norms
+const totalAttributePoints = 20
 const spentAttributePoints = computed(() => {
   return Object.values(attributes.value).reduce((sum, val) => sum + val, 0)
 })
@@ -65,8 +64,7 @@ onMounted(async () => {
   if (store.currentCharacter) {
     const c = store.currentCharacter
     name.value = c.name
-    concept.value = c.data.concept || ''
-    characterType.value = c.data.character_type || 'Survivor'
+    characterType.value = c.data.character_type || ''
     attributes.value = { ...attributes.value, ...c.data.attributes }
     lifePoints.value = c.data.life_points || derivedStats.value.lifePoints
     endurancePoints.value = c.data.endurance_points || derivedStats.value.endurancePoints
@@ -82,56 +80,33 @@ onMounted(async () => {
 
 // Save
 async function save() {
+  // Preserve storage from existing data
+  const existingData = store.currentCharacter?.data || {}
   await store.updateCharacter(route.params.id, {
     name: name.value,
     data: {
-      concept: concept.value,
       character_type: characterType.value,
       attributes: attributes.value,
       life_points: lifePoints.value,
+      life_points_max: lifePoints.value,
       endurance_points: endurancePoints.value,
+      endurance_points_max: endurancePoints.value,
       speed: speed.value,
       essence: essence.value,
+      essence_max: essence.value,
       skills: skills.value,
       qualities: qualities.value,
       drawbacks: drawbacks.value,
       inventory: inventory.value,
+      storage: existingData.storage || [],
       notes: notes.value,
     }
   })
   router.push(`/character/${route.params.id}`)
 }
 
-// List item helpers
-function addSkill() {
-  skills.value.push({ name: '', level: 1, attribute: 'intelligence' })
-}
-function removeSkill(index) {
-  skills.value.splice(index, 1)
-}
+// List item helpers - no longer needed, editing done on main screen
 
-function addQuality() {
-  qualities.value.push({ name: '', points: 1, description: '' })
-}
-function removeQuality(index) {
-  qualities.value.splice(index, 1)
-}
-
-function addDrawback() {
-  drawbacks.value.push({ name: '', points: 1, description: '' })
-}
-function removeDrawback(index) {
-  drawbacks.value.splice(index, 1)
-}
-
-function addItem() {
-  inventory.value.push({ name: '', quantity: 1, notes: '' })
-}
-function removeItem(index) {
-  inventory.value.splice(index, 1)
-}
-
-const characterTypes = ['Survivor', 'Norm', 'Inspired']
 const attrKeys = ['strength', 'dexterity', 'constitution', 'intelligence', 'perception', 'willpower']
 const attrLabels = {
   strength: 'Сила',
@@ -149,258 +124,211 @@ const attrIcons = {
   perception: 'i-game-icons-eye-target',
   willpower: 'i-game-icons-psychic-waves',
 }
+const attrColors = {
+  strength: 'text-red-400',
+  dexterity: 'text-yellow-400',
+  constitution: 'text-orange-400',
+  intelligence: 'text-blue-400',
+  perception: 'text-cyan-400',
+  willpower: 'text-purple-400',
+}
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto pb-20">
-    <div class="flex items-center justify-between mb-6">
-      <router-link :to="`/character/${route.params.id}`" class="text-bone/60 hover:text-bone text-sm flex items-center gap-1">
-        <span class="i-tabler-arrow-left icon-sm"></span>
-        Отмена
+  <div class="pb-16 bg-void min-h-screen overflow-x-hidden">
+    <!-- Top bar -->
+    <div class="sticky top-0 z-10 bg-night border-b-2 border-toxic-muted px-3 py-3 flex items-center justify-between">
+      <router-link :to="`/character/${route.params.id}`" class="text-bone-muted hover:text-toxic flex items-center gap-1 transition-colors font-sans">
+        <span class="i-tabler-arrow-left icon-lg"></span>
+        <span class="text-base">Отмена</span>
       </router-link>
-      <button @click="save" class="btn-primary flex items-center gap-1.5">
-        <span class="i-tabler-device-floppy icon-sm"></span>
+      <button @click="save" class="btn-primary flex items-center gap-1.5 font-sans">
+        <span class="i-tabler-device-floppy icon"></span>
         Сохранить
       </button>
     </div>
     
-    <!-- Basic info -->
-    <div class="card mb-6">
-      <h2 class="text-lg font-bold text-bone mb-4 flex items-center gap-2">
-        <span class="i-game-icons-person icon text-bone/40"></span>
-        Основное
-      </h2>
-      <div class="grid md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-bone/60 text-sm mb-1">Имя</label>
-          <input v-model="name" type="text" class="input-field" />
-        </div>
-        <div>
-          <label class="block text-bone/60 text-sm mb-1">Концепт</label>
-          <input v-model="concept" type="text" class="input-field" placeholder="Ex-военный, Учёный..." />
-        </div>
-        <div>
-          <label class="block text-bone/60 text-sm mb-1">Тип персонажа</label>
-          <select v-model="characterType" class="input-field">
-            <option v-for="t in characterTypes" :key="t" :value="t">{{ t }}</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Attributes -->
-    <div class="card mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-bone flex items-center gap-2">
-          <span class="i-game-icons-progression icon text-bone/40"></span>
-          Атрибуты
+    <div class="p-3 space-y-4">
+      <!-- Basic info -->
+      <section class="bg-dark border-2 border-bone-muted/50 rounded-lg p-3">
+        <h2 class="font-sans text-base text-bone-dim tracking-wider uppercase mb-3 flex items-center gap-2">
+          <span class="i-game-icons-person icon-lg text-toxic"></span>
+          ОСНОВНОЕ
         </h2>
-        <span :class="attributePointsRemaining < 0 ? 'text-blood' : 'text-bone/60'" class="text-sm flex items-center gap-1">
-          <span class="i-game-icons-coins icon-sm"></span>
-          Очков: {{ attributePointsRemaining }}
-        </span>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div v-for="key in attrKeys" :key="key">
-          <label class="block text-bone/60 text-sm mb-1 flex items-center gap-1.5">
-            <span :class="attrIcons[key]" class="icon-sm text-bone/40"></span>
-            {{ attrLabels[key] }}
-          </label>
-          <div class="flex items-center gap-2">
-            <button 
-              @click="attributes[key] = Math.max(1, attributes[key] - 1)"
-              class="btn-secondary w-10 h-10 flex items-center justify-center"
-            >
-              <span class="i-tabler-minus icon-sm"></span>
-            </button>
-            <input 
-              v-model.number="attributes[key]" 
-              type="number" 
-              min="1" 
-              max="6"
-              class="input-field text-center w-16"
-            />
-            <button 
-              @click="attributes[key] = Math.min(6, attributes[key] + 1)"
-              class="btn-secondary w-10 h-10 flex items-center justify-center"
-            >
-              <span class="i-tabler-plus icon-sm"></span>
-            </button>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-bone-muted text-sm font-sans uppercase tracking-wide mb-1">Имя</label>
+            <input v-model="name" type="text" class="input-field" placeholder="Имя персонажа" />
+          </div>
+          <div>
+            <label class="block text-bone-muted text-sm font-sans uppercase tracking-wide mb-1">Тип персонажа</label>
+            <input v-model="characterType" type="text" class="input-field" placeholder="Survivor, Inspired..." />
           </div>
         </div>
-      </div>
-    </div>
-    
-    <!-- Derived stats -->
-    <div class="card mb-6">
-      <h2 class="text-lg font-bold text-bone mb-4 flex items-center gap-2">
-        <span class="i-game-icons-stats icon text-bone/40"></span>
-        Производные характеристики
-      </h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-bone/60 text-sm mb-1 flex items-center gap-1">
-            <span class="i-game-icons-hearts icon-sm text-blood"></span>
-            Life Points
-            <span class="text-bone/40">({{ derivedStats.lifePoints }})</span>
-          </label>
-          <input v-model.number="lifePoints" type="number" class="input-field" />
+      </section>
+      
+      <!-- Attributes -->
+      <section class="bg-dark border-2 border-bone-muted/50 rounded-lg p-3">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-sans text-base text-bone-dim tracking-wider uppercase flex items-center gap-2">
+            <span class="i-game-icons-progression icon-lg text-toxic"></span>
+            АТРИБУТЫ
+          </h2>
+          <span :class="attributePointsRemaining < 0 ? 'text-blood' : 'text-toxic'" class="text-lg font-sans font-bold flex items-center gap-1">
+            <span class="i-game-icons-coins icon"></span>
+            {{ attributePointsRemaining }}
+          </span>
         </div>
-        <div>
-          <label class="block text-bone/60 text-sm mb-1 flex items-center gap-1">
-            <span class="i-game-icons-sprint icon-sm text-decay"></span>
-            Endurance
-            <span class="text-bone/40">({{ derivedStats.endurancePoints }})</span>
-          </label>
-          <input v-model.number="endurancePoints" type="number" class="input-field" />
+        
+        <!-- Attribute rows -->
+        <div class="space-y-2">
+          <div v-for="key in attrKeys" :key="key" class="flex items-center justify-between py-1 border-b border-bone-muted/20 last:border-b-0">
+            <div class="flex items-center gap-2 min-w-0">
+              <span :class="[attrIcons[key], attrColors[key]]" class="icon flex-none"></span>
+              <span class="text-bone text-base font-sans truncate">{{ attrLabels[key] }}</span>
+            </div>
+            <div class="flex items-center gap-0 flex-none">
+              <button 
+                @click="attributes[key] = Math.max(1, attributes[key] - 1)"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-toxic rounded transition-colors"
+              >
+                <span class="i-tabler-minus icon-sm"></span>
+              </button>
+              <span :class="attrColors[key]" class="text-xl font-sans font-bold w-8 text-center">{{ attributes[key] }}</span>
+              <button 
+                @click="attributes[key] = attributes[key] + 1"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-toxic rounded transition-colors"
+              >
+                <span class="i-tabler-plus icon-sm"></span>
+              </button>
+            </div>
+          </div>
         </div>
-        <div>
-          <label class="block text-bone/60 text-sm mb-1 flex items-center gap-1">
-            <span class="i-game-icons-running-shoe icon-sm text-bone/60"></span>
-            Speed
-            <span class="text-bone/40">({{ derivedStats.speed }})</span>
-          </label>
-          <input v-model.number="speed" type="number" class="input-field" />
-        </div>
-        <div>
-          <label class="block text-bone/60 text-sm mb-1 flex items-center gap-1">
-            <span class="i-game-icons-vine-whip icon-sm text-purple-400"></span>
-            Essence
-            <span class="text-bone/40">({{ derivedStats.essence }})</span>
-          </label>
-          <input v-model.number="essence" type="number" class="input-field" />
-        </div>
-      </div>
-    </div>
-    
-    <!-- Skills -->
-    <div class="card mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-bone flex items-center gap-2">
-          <span class="i-game-icons-skills icon text-bone/40"></span>
-          Навыки
+      </section>
+      
+      <!-- Derived stats -->
+      <section class="bg-dark border-2 border-bone-muted/50 rounded-lg p-3">
+        <h2 class="font-sans text-base text-bone-dim tracking-wider uppercase mb-3 flex items-center gap-2">
+          <span class="i-game-icons-stats icon-lg text-toxic"></span>
+          ПРОИЗВОДНЫЕ ХАРАКТЕРИСТИКИ
         </h2>
-        <button @click="addSkill" class="btn-secondary text-sm flex items-center gap-1">
-          <span class="i-tabler-plus icon-sm"></span>
-          Добавить
-        </button>
-      </div>
-      <div v-if="skills.length" class="space-y-3">
-        <div v-for="(skill, i) in skills" :key="i" class="flex gap-2 items-end">
-          <div class="flex-1">
-            <input v-model="skill.name" type="text" placeholder="Название навыка" class="input-field" />
+        
+        <div class="space-y-2">
+          <!-- LP -->
+          <div class="flex items-center justify-between py-1 border-b border-bone-muted/20">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="i-game-icons-hearts icon text-health flex-none"></span>
+              <span class="text-bone text-base font-sans">LP</span>
+              <span class="text-bone-muted/50 text-xs">({{ derivedStats.lifePoints }})</span>
+            </div>
+            <div class="flex items-center gap-0 flex-none">
+              <button 
+                @click="lifePoints = Math.max(1, lifePoints - 1)"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-health rounded transition-colors"
+              >
+                <span class="i-tabler-minus icon-sm"></span>
+              </button>
+              <span class="text-health text-xl font-sans font-bold w-10 text-center">{{ lifePoints }}</span>
+              <button 
+                @click="lifePoints++"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-health rounded transition-colors"
+              >
+                <span class="i-tabler-plus icon-sm"></span>
+              </button>
+            </div>
           </div>
-          <div class="w-20">
-            <input v-model.number="skill.level" type="number" min="1" max="5" class="input-field text-center" />
+          
+          <!-- EP -->
+          <div class="flex items-center justify-between py-1 border-b border-bone-muted/20">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="i-game-icons-sprint icon text-energy flex-none"></span>
+              <span class="text-bone text-base font-sans">EP</span>
+              <span class="text-bone-muted/50 text-xs">({{ derivedStats.endurancePoints }})</span>
+            </div>
+            <div class="flex items-center gap-0 flex-none">
+              <button 
+                @click="endurancePoints = Math.max(1, endurancePoints - 1)"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-energy rounded transition-colors"
+              >
+                <span class="i-tabler-minus icon-sm"></span>
+              </button>
+              <span class="text-energy text-xl font-sans font-bold w-10 text-center">{{ endurancePoints }}</span>
+              <button 
+                @click="endurancePoints++"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-energy rounded transition-colors"
+              >
+                <span class="i-tabler-plus icon-sm"></span>
+              </button>
+            </div>
           </div>
-          <button @click="removeSkill(i)" class="btn-secondary text-blood/60 hover:text-blood w-10 h-10 flex items-center justify-center">
-            <span class="i-tabler-x icon-sm"></span>
-          </button>
+          
+          <!-- SP -->
+          <div class="flex items-center justify-between py-1 border-b border-bone-muted/20">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="i-game-icons-running-shoe icon text-speed flex-none"></span>
+              <span class="text-bone text-base font-sans">SP</span>
+              <span class="text-bone-muted/50 text-xs">({{ derivedStats.speed }})</span>
+            </div>
+            <div class="flex items-center gap-0 flex-none">
+              <button 
+                @click="speed = Math.max(1, speed - 1)"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-speed rounded transition-colors"
+              >
+                <span class="i-tabler-minus icon-sm"></span>
+              </button>
+              <span class="text-speed text-xl font-sans font-bold w-10 text-center">{{ speed }}</span>
+              <button 
+                @click="speed++"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-speed rounded transition-colors"
+              >
+                <span class="i-tabler-plus icon-sm"></span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- ES -->
+          <div class="flex items-center justify-between py-1">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="i-game-icons-vine-whip icon text-essence flex-none"></span>
+              <span class="text-bone text-base font-sans">ES</span>
+              <span class="text-bone-muted/50 text-xs">({{ derivedStats.essence }})</span>
+            </div>
+            <div class="flex items-center gap-0 flex-none">
+              <button 
+                @click="essence = Math.max(1, essence - 1)"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-essence rounded transition-colors"
+              >
+                <span class="i-tabler-minus icon-sm"></span>
+              </button>
+              <span class="text-essence text-xl font-sans font-bold w-10 text-center">{{ essence }}</span>
+              <button 
+                @click="essence++"
+                class="w-8 h-8 flex items-center justify-center text-bone-muted hover:text-essence rounded transition-colors"
+              >
+                <span class="i-tabler-plus icon-sm"></span>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-      <p v-else class="text-bone/40 text-sm">Нажми «Добавить» чтобы добавить навык</p>
-    </div>
-    
-    <!-- Qualities -->
-    <div class="card mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-bone flex items-center gap-2">
-          <span class="i-game-icons-star-formation icon text-bone/40"></span>
-          Качества
+      </section>
+      
+      <!-- Notes -->
+      <section class="bg-dark border-2 border-bone-muted/50 rounded-lg p-3">
+        <h2 class="font-sans text-base text-bone-dim tracking-wider uppercase mb-3 flex items-center gap-2">
+          <span class="i-tabler-notes icon-lg text-toxic"></span>
+          ЗАМЕТКИ
         </h2>
-        <button @click="addQuality" class="btn-secondary text-sm flex items-center gap-1">
-          <span class="i-tabler-plus icon-sm"></span>
-          Добавить
-        </button>
-      </div>
-      <div v-if="qualities.length" class="space-y-3">
-        <div v-for="(q, i) in qualities" :key="i" class="flex gap-2 items-end">
-          <div class="flex-1">
-            <input v-model="q.name" type="text" placeholder="Название" class="input-field" />
-          </div>
-          <div class="w-20">
-            <input v-model.number="q.points" type="number" min="1" class="input-field text-center" placeholder="Pts" />
-          </div>
-          <button @click="removeQuality(i)" class="btn-secondary text-blood/60 hover:text-blood w-10 h-10 flex items-center justify-center">
-            <span class="i-tabler-x icon-sm"></span>
-          </button>
-        </div>
-      </div>
-      <p v-else class="text-bone/40 text-sm">Качества дают бонусы</p>
-    </div>
-    
-    <!-- Drawbacks -->
-    <div class="card mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-bone flex items-center gap-2">
-          <span class="i-game-icons-broken-skull icon text-bone/40"></span>
-          Недостатки
-        </h2>
-        <button @click="addDrawback" class="btn-secondary text-sm flex items-center gap-1">
-          <span class="i-tabler-plus icon-sm"></span>
-          Добавить
-        </button>
-      </div>
-      <div v-if="drawbacks.length" class="space-y-3">
-        <div v-for="(d, i) in drawbacks" :key="i" class="flex gap-2 items-end">
-          <div class="flex-1">
-            <input v-model="d.name" type="text" placeholder="Название" class="input-field" />
-          </div>
-          <div class="w-20">
-            <input v-model.number="d.points" type="number" min="1" class="input-field text-center" placeholder="Pts" />
-          </div>
-          <button @click="removeDrawback(i)" class="btn-secondary text-blood/60 hover:text-blood w-10 h-10 flex items-center justify-center">
-            <span class="i-tabler-x icon-sm"></span>
-          </button>
-        </div>
-      </div>
-      <p v-else class="text-bone/40 text-sm">Недостатки дают дополнительные очки</p>
-    </div>
-    
-    <!-- Inventory -->
-    <div class="card mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-bone flex items-center gap-2">
-          <span class="i-game-icons-knapsack icon text-bone/40"></span>
-          Инвентарь
-        </h2>
-        <button @click="addItem" class="btn-secondary text-sm flex items-center gap-1">
-          <span class="i-tabler-plus icon-sm"></span>
-          Добавить
-        </button>
-      </div>
-      <div v-if="inventory.length" class="space-y-3">
-        <div v-for="(item, i) in inventory" :key="i" class="flex gap-2 items-end">
-          <div class="flex-1">
-            <input v-model="item.name" type="text" placeholder="Предмет" class="input-field" />
-          </div>
-          <div class="w-20">
-            <input v-model.number="item.quantity" type="number" min="1" class="input-field text-center" placeholder="Кол." />
-          </div>
-          <button @click="removeItem(i)" class="btn-secondary text-blood/60 hover:text-blood w-10 h-10 flex items-center justify-center">
-            <span class="i-tabler-x icon-sm"></span>
-          </button>
-        </div>
-      </div>
-      <p v-else class="text-bone/40 text-sm">Добавь снаряжение и предметы</p>
-    </div>
-    
-    <!-- Notes -->
-    <div class="card mb-6">
-      <h2 class="text-lg font-bold text-bone mb-4 flex items-center gap-2">
-        <span class="i-tabler-notes icon text-bone/40"></span>
-        Заметки
-      </h2>
-      <textarea 
-        v-model="notes" 
-        placeholder="Бэкграунд, особенности, мотивация..."
-        class="input-field h-32 resize-y"
-      />
+        <textarea 
+          v-model="notes" 
+          placeholder="Бэкграунд, особенности, мотивация..."
+          class="input-field h-32 resize-y font-sans text-base"
+        />
+      </section>
     </div>
     
     <!-- Floating save button for mobile -->
-    <div class="fixed bottom-4 right-4 md:hidden">
-      <button @click="save" class="btn-primary shadow-lg text-lg px-6 py-3 flex items-center gap-2">
+    <div class="fixed bottom-3 left-3 right-3 md:hidden flex justify-center">
+      <button @click="save" class="btn-primary shadow-[0_0_20px_rgba(57,255,20,0.3)] font-sans px-5 py-2 flex items-center gap-2">
         <span class="i-tabler-device-floppy icon"></span>
         Сохранить
       </button>
