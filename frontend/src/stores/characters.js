@@ -140,6 +140,22 @@ export const useCharactersStore = defineStore('characters', () => {
       return imported
     }
   }
+
+  async function shareCharacter(id) {
+    const res = await auth.api(`/characters/${id}/share`, { method: 'POST' })
+    if (res.ok) {
+      return res.json()
+    }
+  }
+
+  async function importShared(code) {
+    const res = await auth.api(`/characters/import-shared/${code}`, { method: 'POST' })
+    if (res.ok) {
+      const imported = await res.json()
+      await fetchCharacters()
+      return imported
+    }
+  }
   
   return {
     characters,
@@ -154,5 +170,7 @@ export const useCharactersStore = defineStore('characters', () => {
     deleteCharacter,
     exportCharacter,
     importCharacter,
+    shareCharacter,
+    importShared,
   }
 })

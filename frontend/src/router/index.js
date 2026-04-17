@@ -26,6 +26,12 @@ const routes = [
     component: () => import('../views/CharacterEditView.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/share/:code',
+    name: 'share',
+    component: () => import('../views/ShareView.vue'),
+    meta: { requiresAuth: true }
+  },
 ]
 
 const router = createRouter({

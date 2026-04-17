@@ -10,8 +10,8 @@ const store = useCharactersStore()
 // UI state
 const activeMode = ref('active') // 'active' | 'archive'
 const compactHeader = ref(false)
-const exportCode = ref('')
-const showExportDialog = ref(false)
+const shareLink = ref('')
+const showShareDialog = ref(false)
 const showDeleteConfirm = ref(false)
 const copied = ref(false)
 
@@ -244,10 +244,10 @@ onMounted(() => {
 })
 
 async function handleExport() {
-  const result = await store.exportCharacter(route.params.id)
+  const result = await store.shareCharacter(route.params.id)
   if (result) {
-    exportCode.value = result.code
-    showExportDialog.value = true
+    shareLink.value = `${window.location.origin}/share/${result.code}`
+    showShareDialog.value = true
   }
 }
 
@@ -257,7 +257,7 @@ async function handleDelete() {
 }
 
 function copyCode() {
-  navigator.clipboard.writeText(exportCode.value)
+  navigator.clipboard.writeText(shareLink.value)
   copied.value = true
   setTimeout(() => copied.value = false, 2000)
 }
@@ -1344,23 +1344,23 @@ async function saveSliderValue() {
     <!-- MODALS -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     
-    <!-- Export dialog -->
+    <!-- Share dialog -->
     <Teleport to="body">
-      <div v-if="showExportDialog" class="fixed inset-0 bg-void/95 flex items-center justify-center z-50 p-4 font-sans" @click.self="showExportDialog = false">
+      <div v-if="showShareDialog" class="fixed inset-0 bg-void/95 flex items-center justify-center z-50 p-4 font-sans" @click.self="showShareDialog = false">
         <div class="bg-night border-2 border-toxic rounded-xl p-6 w-full max-w-lg">
           <h2 class="font-display text-2xl text-toxic mb-5 flex items-center gap-3">
             <span class="i-tabler-share icon-xl"></span>
-            КОД ПЕРСОНАЖА
+            ССЫЛКА НА ПЕРСОНАЖА
           </h2>
-          <p class="text-bone-muted mb-4 font-sans">Скопируй и отправь другу для импорта</p>
-          <textarea
-            :value="exportCode"
+          <p class="text-bone-muted mb-4 font-sans">Отправь ссылку другу — он сможет импортировать персонажа</p>
+          <input
+            :value="shareLink"
             readonly
-            class="w-full px-4 py-4 bg-dark border-2 border-bone-muted/50 rounded-lg text-bone h-40 resize-none font-mono text-sm box-border focus:outline-none focus:border-toxic transition-colors"
+            class="w-full px-4 py-4 bg-dark border-2 border-bone-muted/50 rounded-lg text-bone font-mono text-sm box-border focus:outline-none focus:border-toxic transition-colors"
             @focus="$event.target.select()"
           />
           <div class="flex gap-3 justify-end mt-5">
-            <button @click="showExportDialog = false" class="px-6 py-3 bg-surface border-2 border-bone-muted text-bone rounded-lg font-sans font-semibold hover:border-bone transition-colors">
+            <button @click="showShareDialog = false" class="px-6 py-3 bg-surface border-2 border-bone-muted text-bone rounded-lg font-sans font-semibold hover:border-bone transition-colors">
               Закрыть
             </button>
             <button @click="copyCode" class="px-6 py-3 bg-toxic border-2 border-toxic text-night rounded-lg font-sans font-semibold hover:brightness-110 transition flex items-center gap-2">

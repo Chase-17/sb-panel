@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import ForeignKey, Text, JSON
+from sqlalchemy import ForeignKey, Text, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional
 
@@ -60,3 +60,14 @@ class Character(Base):
     )
     
     user: Mapped["User"] = relationship(back_populates="characters")
+
+
+class SharedCharacter(Base):
+    __tablename__ = "shared_characters"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(12), unique=True, index=True)
+    name: Mapped[str]
+    data: Mapped[dict] = mapped_column(JSON)
+    created_by: Mapped[Optional[str]] = mapped_column(nullable=True)  # nickname
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

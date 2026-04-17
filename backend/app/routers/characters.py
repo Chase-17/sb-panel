@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import User, Character
+from app.models import User, Character, SharedCharacter
 from app.auth.jwt import get_current_user
 
 router = APIRouter(prefix="/characters", tags=["characters"])
@@ -315,6 +315,93 @@ async def import_character(
         user_id=user.id,
         name=import_data.get("name", "Imported Character"),
         data=import_data.get("data", {})
+    )
+    db.add(character)
+    await db.commit()
+    await db.refresh(character)
+    
+    return CharacterResponse(
+        id=character.id,
+        name=character.name,
+        data=CharacterData(**character.data),
+        created_at=character.created_at.isoformat(),
+        updated_at=character.updated_at.isoformat()
+    )
+
+
+# === Share links ===
+
+@router.post("/{character_id}/share")
+async def share_character(
+    character_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create a short share link for a character."""
+    import secrets
+    
+    result = await db.execute(
+        select(Character).where(
+            Character.id == character_id,
+            Character.user_id == user.id
+        )
+    )
+    character = result.scalar_one_or_none()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    code = secrets.token_urlsafe(8)[:8]
+    
+    shared = SharedCharacter(
+        code=code,
+        name=character.name,
+        data=character.data,
+        created_by=user.nickname,
+    )
+    db.add(shared)
+    await db.commit()
+    
+    return {"code": code}
+
+
+@router.get("/shared/{code}")
+async def get_shared_character(
+    code: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get shared character data by code (no auth required)."""
+    result = await db.execute(
+        select(SharedCharacter).where(SharedCharacter.code == code)
+    )
+    shared = result.scalar_one_or_none()
+    if not shared:
+        raise HTTPException(status_code=404, detail="Share link not found")
+    
+    return {
+        "name": shared.name,
+        "data": shared.data,
+        "created_by": shared.created_by,
+    }
+
+
+@router.post("/import-shared/{code}")
+async def import_shared_character(
+    code: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> CharacterResponse:
+    """Import a shared character to current user's account."""
+    result = await db.execute(
+        select(SharedCharacter).where(SharedCharacter.code == code)
+    )
+    shared = result.scalar_one_or_none()
+    if not shared:
+        raise HTTPException(status_code=404, detail="Share link not found")
+    
+    character = Character(
+        user_id=user.id,
+        name=shared.name,
+        data=shared.data,
     )
     db.add(character)
     await db.commit()
