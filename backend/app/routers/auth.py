@@ -76,13 +76,20 @@ async def register_begin(
             detail="Nickname must be 2-20 characters"
         )
     
-    # Check if exists
-    result = await db.execute(select(User).where(User.nickname == nickname))
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nickname already taken"
-        )
+    # Check if nickname is taken by a user WITH credentials (complete registration)
+    result = await db.execute(
+        select(User).options(selectinload(User.credentials)).where(User.nickname == nickname)
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        if existing.credentials:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nickname already taken"
+            )
+        # User exists but no credentials — orphan from failed registration. Delete and re-create.
+        await db.delete(existing)
+        await db.commit()
     
     # Create user (without credential yet)
     user = User(nickname=nickname)
