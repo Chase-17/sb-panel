@@ -64,6 +64,14 @@ async def check_nickname(
     return UserCheckResponse(exists=exists, nickname=request.nickname)
 
 
+# TEMPORARY: debug endpoint to check WebAuthn config
+@router.get("/debug-config")
+async def debug_config():
+    from app.config import get_settings
+    s = get_settings()
+    return {"rp_id": s.rp_id, "rp_origin": s.rp_origin, "rp_name": s.rp_name}
+
+
 @router.post("/register/begin")
 async def register_begin(
     request: NicknameRequest,
