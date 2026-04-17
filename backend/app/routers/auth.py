@@ -56,10 +56,12 @@ async def check_nickname(
 ) -> UserCheckResponse:
     """Check if nickname exists (determines register vs login flow)."""
     result = await db.execute(
-        select(User).where(User.nickname == request.nickname.lower())
+        select(User).options(selectinload(User.credentials)).where(User.nickname == request.nickname.lower())
     )
     user = result.scalar_one_or_none()
-    return UserCheckResponse(exists=user is not None, nickname=request.nickname)
+    # Orphan users (no credentials) are treated as non-existent
+    exists = user is not None and len(user.credentials) > 0
+    return UserCheckResponse(exists=exists, nickname=request.nickname)
 
 
 @router.post("/register/begin")
